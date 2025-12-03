@@ -1,0 +1,907 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* Fix hydration mismatch */
+body {
+  @apply antialiased;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-kanit), sans-serif;
+}
+
+/* Loading Animations */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loading-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+.animate-loading-bar {
+  animation: loading-bar 1.5s ease-in-out infinite;
+}
+
+/* StatusCell Component Styles */
+.status-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.status-main {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+}
+
+.info-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.info-button:hover {
+  background-color: #f0f0f0;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  min-width: 300px;
+  max-width: 640px;
+  max-height: 70vh;
+  overflow: auto;
+  pointer-events: auto;
+}
+
+.tooltip-content h4 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tooltip-content {
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.tooltip-content .breakdown-item {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.tooltip-content .loading {
+  font-size: 13px;
+  color: #666;
+  font-style: italic;
+}
+
+.tooltip-content .error {
+  font-size: 13px;
+  color: #dc2626;
+}
+
+/* Custom input styles for better visibility */
+input[type="text"],
+input[type="email"], 
+input[type="password"],
+input[type="tel"],
+input[type="date"],
+input[type="number"],
+textarea {
+  color: #111827 !important; /* text-gray-900 */
+  background-color: #ffffff !important; /* bg-white */
+  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important; /* Override autofill background */
+  box-shadow: 0 0 0 30px #ffffff inset !important;
+}
+
+/* Select dropdown styling with arrow */
+select {
+  color: #111827 !important; /* text-gray-900 */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-color: #ffffff !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23374151' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 20px 20px !important;
+  padding-right: 40px !important;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* Disabled select elements - lighter arrow */
+select:disabled {
+  background-color: #f3f4f6 !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  cursor: not-allowed !important;
+}
+
+/* Override autofill styles completely */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+  box-shadow: 0 0 0 30px #ffffff inset !important;
+  background-color: #ffffff !important;
+}
+
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="tel"]::placeholder,
+textarea::placeholder {
+  color: #6B7280 !important; /* text-gray-500 */
+  font-weight: normal;
+}
+
+/* Focus states for better contrast */
+input:focus,
+textarea:focus,
+select:focus {
+  color: #111827 !important; /* text-gray-900 */
+  background-color: #ffffff !important; /* bg-white */
+}
+
+/* Override background for error states - allow red background for validation errors */
+/* Use higher specificity to override autofill and default styles */
+input[type="text"][data-error="true"],
+input[type="email"][data-error="true"],
+input[type="tel"][data-error="true"],
+input[type="text"][data-error="true"]:focus,
+input[type="email"][data-error="true"]:focus,
+input[type="tel"][data-error="true"]:focus,
+input[type="text"][data-error="true"]:-webkit-autofill,
+input[type="email"][data-error="true"]:-webkit-autofill,
+input[type="tel"][data-error="true"]:-webkit-autofill,
+input[type="text"][data-error="true"]:-webkit-autofill:hover,
+input[type="email"][data-error="true"]:-webkit-autofill:hover,
+input[type="tel"][data-error="true"]:-webkit-autofill:hover,
+input[type="text"][data-error="true"]:-webkit-autofill:focus,
+input[type="email"][data-error="true"]:-webkit-autofill:focus,
+input[type="tel"][data-error="true"]:-webkit-autofill:focus {
+  background-color: #fef2f2 !important; /* bg-red-50 */
+  -webkit-box-shadow: 0 0 0 30px #fef2f2 inset !important; /* Override autofill yellow background */
+  box-shadow: 0 0 0 30px #fef2f2 inset !important;
+}
+
+/* Select dropdown options */
+select option {
+  color: #111827 !important; /* text-gray-900 */
+  background-color: #ffffff !important; /* bg-white */
+}
+
+/* Custom validation styles - only show after form submission */
+.form-submitted input:invalid {
+  border-color: #ef4444 !important; /* red-500 */
+  box-shadow: 0 0 0 1px #ef4444 !important;
+}
+
+/* Error state class for manual validation */
+.input-error {
+  border-color: #ef4444 !important; /* red-500 */
+  box-shadow: 0 0 0 1px #ef4444 !important;
+}
+
+.input-success {
+  border-color: #10b981 !important; /* green-500 */
+}
+
+/* Phone number input styling */
+input[type="tel"] {
+  letter-spacing: 0.05em;
+}
+
+/* Touch scrolling support for tables */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #3b82f6 #e5f3ff; /* Blue scrollbar for Firefox */
+  cursor: grab; /* Default grab cursor for all tables */
+  border-radius: 16px; /* More rounded corners */
+  --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  background: white;
+}
+
+/* Allow text selection for text content in table cells */
+.table-container td *:not(button):not(a):not([role="button"]),
+.table-container th *:not(button):not(a):not([role="button"]) {
+  user-select: text;
+  cursor: auto;
+  pointer-events: auto;
+}
+
+/* Override cursor for interactive elements in table cells */
+.table-container td button,
+.table-container td button *,
+.table-container td [role="button"],
+.table-container td [role="button"] *,
+.table-container td [onClick],
+.table-container td [onClick] *,
+.table-container td [data-clickable="true"],
+.table-container td [data-clickable="true"] * {
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  pointer-events: auto !important;
+}
+
+/* Override cursor for text selectable elements */
+.table-container .text-selectable {
+  user-select: text !important;
+  cursor: text !important;
+}
+
+/* Ensure text selection works for selectable table cells */
+.text-selectable {
+  user-select: text !important;
+  cursor: text !important;
+}
+
+/* Allow text selection in table cells */
+.table-container td {
+  user-select: text;
+  cursor: text;
+  pointer-events: auto;
+}
+.table-container th {
+  user-select: text;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Override for selectable cells with higher specificity */
+.table-container table td.text-selectable {
+  user-select: text !important;
+  cursor: text !important;
+}
+
+/* Text selection for selectable table cells */
+.table-container td.text-selectable {
+  user-select: text !important;
+  cursor: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  pointer-events: auto !important;
+}
+
+/* Override for spans inside buttons - should not be selectable */
+button span {
+  user-select: none !important;
+  cursor: inherit !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Specific override for buttons in table cells */
+.table-container button {
+  cursor: pointer !important;
+}
+
+.table-container button span {
+  user-select: none !important;
+  cursor: inherit !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Override cursor for SVG elements inside buttons in table cells */
+.table-container button svg,
+.table-container button svg * {
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Override cursor for all interactive elements in table cells */
+.table-container button,
+.table-container a,
+.table-container [role="button"],
+.table-container [onClick],
+.table-container [data-clickable="true"] {
+  cursor: pointer !important;
+}
+
+.table-container button *,
+.table-container a *,
+.table-container [role="button"] *,
+.table-container [onClick] *,
+.table-container [data-clickable="true"] * {
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Cursor states for drag scrolling */
+.table-container:active {
+  cursor: grabbing; /* Show grabbing cursor while dragging */
+}
+
+.table-container.dragging {
+  cursor: grabbing !important;
+  box-shadow: inset 0 0 0 2px #3b82f6; /* Blue border when dragging */
+}
+
+.table-container.dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+/* Add empty space detection for drag scrolling */
+.table-container td:empty,
+.table-container th:empty {
+  cursor: grab;
+  user-select: none;
+}
+
+/* Override for empty cells - allow drag scrolling */
+.table-container td:empty:before,
+.table-container th:empty:before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+/* Beautiful Blue WebKit scrollbar for all tables */
+.table-container::-webkit-scrollbar {
+  height: 17px; /* Slightly thicker for better visibility */
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: linear-gradient(90deg, #f0f8ff 0%, #e6f3ff 100%); /* Gradient background */
+  border-radius: 8px; /* More rounded */
+  margin: 4px; /* Add margin for better appearance */
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%); /* Beautiful blue gradient */
+  border-radius: 8px; /* More rounded */
+  border: 2px solid #f0f8ff; /* Thicker border for better contrast */
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2); /* Subtle shadow */
+  transition: all 0.3s ease; /* Smooth transitions */
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #1d4ed8 0%, #1e40af 50%, #1e3a8a 100%); /* Darker gradient on hover */
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3); /* Enhanced shadow on hover */
+  transform: scale(1.05); /* Slight scale effect */
+}
+
+.table-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(90deg, #1e3a8a 0%, #1e40af 100%); /* Even darker when active */
+  transform: scale(0.95); /* Pressed effect */
+}
+
+/* Ensure smooth scrolling on touch devices */
+.table-container {
+  scroll-behavior: smooth;
+  touch-action: pan-x pan-y;
+}
+
+/* Enhanced table styling */
+.table-container table {
+  border-radius: 16px; /* Match container border radius */
+  overflow: hidden; /* Ensure rounded corners work */
+  box-shadow: none; /* Remove default table shadow since container has it */
+}
+
+/* Beautiful table header styling */
+.table-container thead th {
+  background: var(--color-blue-600) !important; /* Use CSS variable for blue-600 */
+  border: none !important;
+  position: relative;
+  overflow: hidden;
+  font-weight: 400 !important; /* Set font-weight to 400 instead of bold */
+}
+
+.table-container thead th:first-child {
+  border-top-left-radius: 16px;
+}
+
+.table-container thead th:last-child {
+  border-top-right-radius: 16px;
+}
+
+/* Enhanced table row hover effects */
+.table-container tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.08) !important;
+}
+
+.table-container tbody tr:hover {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.02) 0%, rgba(59, 130, 246, 0.05) 50%, rgba(59, 130, 246, 0.02) 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.12), 0 4px 12px -4px rgba(59, 130, 246, 0.1);
+}
+
+.table-container tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 16px;
+}
+
+.table-container tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 16px;
+}
+
+/* Enhanced table cell styling */
+.table-container td {
+  border-color: rgba(59, 130, 246, 0.08) !important;
+  transition: all 0.2s ease;
+}
+
+/* Add subtle animation when dragging */
+.table-container.dragging {
+  cursor: grabbing !important;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.15),
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    inset 0 0 0 2px rgba(59, 130, 246, 0.3); /* Beautiful elevated shadow when dragging */
+  transform: scale(1.002); /* Subtle scale for elevation effect */
+}
+
+/* Darker orange backgrounds for table rows */
+.table-container .bg-orange-50 {
+  background-color: #fed7aa !important; /* Darker orange-200 instead of orange-50 */
+}
+
+.table-container .bg-orange-100 {
+  background-color: #fdba74 !important; /* Darker orange-300 instead of orange-100 */
+}
+
+/* Darker orange text for badges */
+.table-container .text-orange-800 {
+  color: #9a3412 !important; /* Darker orange-800 text */
+}
+
+/* Change blue-50 backgrounds to gray-100 for better contrast */
+.table-container .bg-blue-50 {
+  background-color: #f3f4f6 !important; /* gray-100 instead of blue-50 */
+}
+
+/* Override table cell padding (excluding headers) */
+.table-container tbody td.px-6 {
+  padding-left: 1rem !important; /* px-4 */
+  padding-right: 1rem !important; /* px-4 */
+}
+
+.table-container tbody td.py-4 {
+  padding-top: 0.75rem !important; /* py-3 */
+  padding-bottom: 0.75rem !important; /* py-3 */
+}
+
+/* More specific override for combined px-6 py-4 classes */
+.table-container tbody td {
+  padding: 0.75rem 1rem !important; /* py-3 px-4 for all tbody cells */
+}
+
+/* Keep header padding unchanged */
+.table-container thead th {
+  padding: 0.75rem 1.5rem !important; /* Keep px-6 py-3 for headers */
+}
+
+/* Global th font-weight override for all tables */
+th {
+  font-weight: 400 !important; /* Set font-weight to 400 instead of bold for all th elements */
+}
+
+/* Override text color in table cells (excluding headers) */
+.table-container tbody .text-gray-500 {
+  color: #374151 !important; /* Consistent gray color */
+}
+
+.table-container tbody .text-gray-900 {
+  color: #374151 !important; /* Same consistent gray color */
+}
+
+.table-container tbody .text-black {
+  color: #374151 !important; /* Same consistent gray color for black text */
+}
+
+/* Override any other dark text colors in table body */
+.table-container tbody td {
+  color: #374151 !important; /* Default consistent gray color for all table body text */
+}
+
+/* Cursor pointer for interactive elements */
+button,
+[role="button"],
+.cursor-pointer,
+[onClick],
+[data-clickable="true"] {
+  cursor: pointer !important;
+}
+
+/* Specific cursor styles for interactive elements */
+button:not(:disabled) {
+  cursor: pointer !important;
+}
+
+button:disabled {
+  cursor: not-allowed !important;
+}
+
+/* Clickable links and navigation items */
+a,
+[role="link"] {
+  cursor: pointer !important;
+}
+
+/* Dropdown toggles and expandable menus */
+[aria-expanded],
+.dropdown-toggle,
+.menu-toggle {
+  cursor: pointer !important;
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgb(59 130 246) transparent; /* Firefox - blue with low opacity */
+}
+
+/* WebKit scrollbar for sidebar */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.8); /* White with low opacity */
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6; /* Blue-500 - medium blue */
+}
+
+/* Hide scrollbar on mobile for cleaner look */
+@media (max-width: 1024px) {
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+  }
+  
+  .sidebar-scrollbar {
+    scrollbar-width: none; /* Firefox */
+  }
+}
+
+/* Force dropdown to open below by using CSS positioning */
+select.admin-inventory-dropdown {
+  position: relative !important;
+  z-index: 1 !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px !important;
+  padding-right: 40px !important;
+}
+
+/* Force dropdown to open below by using CSS positioning */
+select.admin-inventory-dropdown:focus {
+  position: relative !important;
+  z-index: 10 !important;
+  transform: translateZ(0) translateY(0) !important;
+  will-change: transform !important;
+}
+
+/* Force dropdown options to appear below */
+select.admin-inventory-dropdown option {
+  position: relative !important;
+  z-index: 10 !important;
+  transform: translateZ(0) !important;
+}
+
+/* Ensure proper stacking context for all dropdowns */
+.dropdown-container {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Additional fix for dropdown positioning in modals and containers */
+.modal select,
+.fixed select,
+.absolute select,
+.relative select {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Force dropdown to open downward */
+select[multiple] {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Mobile and small screen fixes */
+@media (max-height: 600px) {
+  select.admin-inventory-dropdown {
+    position: relative !important;
+    z-index: 10 !important;
+    transform: translateZ(0) !important;
+  }
+}
+
+/* Override any conflicting styles */
+select.admin-inventory-dropdown * {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Force dropdown to open below by using CSS positioning */
+select.admin-inventory-dropdown {
+  position: relative !important;
+  z-index: 1 !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
+
+/* Force dropdown to open below by using CSS positioning */
+select.admin-inventory-dropdown:focus {
+  position: relative !important;
+  z-index: 10 !important;
+  transform: translateZ(0) translateY(0) !important;
+  will-change: transform !important;
+}
+
+/* Force dropdown options to appear below */
+select.admin-inventory-dropdown option {
+  position: relative !important;
+  z-index: 10 !important;
+  transform: translateZ(0) !important;
+}
+
+/* Additional CSS to force dropdown direction */
+select.admin-inventory-dropdown {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px !important;
+  padding-right: 40px !important;
+}
+
+/* Force dropdown to open downward */
+select.admin-inventory-dropdown:focus {
+  position: relative !important;
+  z-index: 10 !important;
+  transform: translateZ(0) translateY(0) !important;
+  will-change: transform !important;
+}
+
+/* Ensure dropdown opens in correct direction */
+@media (max-height: 600px) {
+  select.admin-inventory-dropdown {
+    position: relative !important;
+    z-index: 10 !important;
+    transform: translateZ(0) !important;
+  }
+}
+
+/* Override any conflicting styles */
+select.admin-inventory-dropdown * {
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* React Hot Toast close button styling */
+[data-hot-toast-id] {
+  position: relative !important;
+}
+
+/* Close button for react-hot-toast */
+.toast-close-button {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  color: inherit !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  transition: all 0.2s ease !important;
+  z-index: 10 !important;
+}
+
+.toast-close-button:hover {
+  background: rgba(0, 0, 0, 0.2) !important;
+  transform: scale(1.1) !important;
+}
+
+.toast-close-button::before {
+  content: '×' !important;
+  font-weight: bold !important;
+  font-size: 18px !important;
+}
+
+/* Error toast close button */
+[data-hot-toast-id][aria-live="assertive"] .toast-close-button {
+  background: rgba(114, 28, 36, 0.1) !important;
+  color: #721c24 !important;
+}
+
+[data-hot-toast-id][aria-live="assertive"] .toast-close-button:hover {
+  background: rgba(114, 28, 36, 0.2) !important;
+}
+
+/* Success toast close button */
+[data-hot-toast-id][aria-live="polite"] .toast-close-button {
+  background: rgba(21, 87, 36, 0.1) !important;
+  color: #155724 !important;
+}
+
+[data-hot-toast-id][aria-live="polite"] .toast-close-button:hover {
+  background: rgba(21, 87, 36, 0.2) !important;
+}
+
+/* Toast animations */
+@keyframes toast-enter {
+  0% {
+    transform: translate3d(0, -100%, 0) scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-leave {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, -100%, 0) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.animate-enter {
+  animation: toast-enter 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+.animate-leave {
+  animation: toast-leave 0.4s cubic-bezier(0.06, 0.71, 0.55, 1) forwards;
+}
+
+/* Responsive toast max-width */
+.toast-responsive-width {
+  width: 100% !important;
+  min-width: 300px !important;
+}
+
+/* Custom scrollbar สำหรับ toast - สีแดงอมน้ำตาล */
+.toast-responsive-width::-webkit-scrollbar {
+  width: 10px;
+}
+
+.toast-responsive-width::-webkit-scrollbar-track {
+  background: rgba(248, 215, 218, 0.3);
+  border-radius: 10px;
+}
+
+.toast-responsive-width::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c97a7a 0%, #a85a5a 50%, #8b4545 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(248, 215, 218, 0.3);
+}
+
+.toast-responsive-width::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #b86a6a 0%, #984a4a 50%, #7a3535 100%);
+}
+
+/* สำหรับ Firefox */
+.toast-responsive-width {
+  scrollbar-width: thin;
+  scrollbar-color: #c97a7a rgba(248, 215, 218, 0.3);
+}
+
+/* Mobile: <= 768px */
+@media (max-width: 768px) {
+  .toast-responsive-width {
+    max-width: 70vw !important;
+  }
+}
+
+/* Tablet: 769px - 1440px */
+@media (min-width: 769px) and (max-width: 1440px) {
+  .toast-responsive-width {
+    max-width: 50vw !important;
+  }
+}
+
+/* Desktop: > 1440px */
+@media (min-width: 1441px) {
+  .toast-responsive-width {
+    max-width: 40vw !important;
+  }
+}

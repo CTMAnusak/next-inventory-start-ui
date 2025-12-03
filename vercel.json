@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-recycle-bin",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/admin/cron/yearly-archive",
+      "schedule": "0 2 1 1 *"
+    },
+    {
+      "path": "/api/admin/inventory-snapshot/auto-create",
+      "schedule": "0 0 1 * *"
+    }
+  ]
+}
