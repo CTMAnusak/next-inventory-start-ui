@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { Package, X, AlertCircle, CheckCircle, Mail } from 'lucide-react';
+import { Package, X, AlertCircle, CheckCircle, Mail, User, ChevronDown, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
@@ -13,6 +13,8 @@ export default function LoginPage() {
   const [googleLoginLoading, setGoogleLoginLoading] = useState(false);
   const [googleRegisterLoading, setGoogleRegisterLoading] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showUserSelector, setShowUserSelector] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [errorData, setErrorData] = useState<{
     title: string;
     message: string;
@@ -22,7 +24,8 @@ export default function LoginPage() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuth();
+  const { login, getMockUsers } = useAuth();
+  const mockUsers = getMockUsers();
 
   // Mockup: Skip auth check in UI-only mode
   useEffect(() => {
@@ -67,6 +70,24 @@ export default function LoginPage() {
       setShowErrorModal(true);
     }
   }, [searchParams]);
+
+  const handleSelectUser = (selectedUser: typeof mockUsers[0]) => {
+    setEmail(selectedUser.email);
+    // ไม่กรอกรหัสผ่านอัตโนมัติ - ให้ผู้ใช้พิมพ์เอง
+    setPassword('');
+    setShowUserSelector(false);
+    setUserSearchTerm('');
+    toast.success(`เลือกผู้ใช้: ${selectedUser.firstName} ${selectedUser.lastName}`, { duration: 2000 });
+  };
+
+  // Filter users based on search term (ชื่อ, นามสกุล, อีเมล)
+  const filteredUsers = mockUsers.filter(user => {
+    if (!userSearchTerm.trim()) return true;
+    const searchLower = userSearchTerm.toLowerCase();
+    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+    const email = (user.email || '').toLowerCase();
+    return fullName.includes(searchLower) || email.includes(searchLower);
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -341,8 +362,94 @@ export default function LoginPage() {
               Inventory Management Dashboard
             </p>
           </div>
+
+          {/* Quick Login Section - Mockup Users */}
+          <div className="mt-6 mb-6">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowUserSelector(!showUserSelector)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+              >
+                <div className="flex items-center">
+                  <User className="w-4 h-4 mr-2" />
+                  <span>เลือกผู้ใช้</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserSelector ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showUserSelector && (
+                <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-hidden flex flex-col">
+                  {/* Search Input */}
+                  <div className="p-2 border-b border-gray-200">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="ค้นหาชื่อ, นามสกุล, หรืออีเมล..."
+                        value={userSearchTerm}
+                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* User List */}
+                  <div className="overflow-y-auto max-h-64">
+                    {filteredUsers.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">
+                        ไม่พบผู้ใช้ที่ค้นหา
+                      </div>
+                    ) : (
+                      <div className="p-2">
+                        {filteredUsers.map((user) => (
+                          <button
+                            key={user.id}
+                            type="button"
+                            onClick={() => handleSelectUser(user)}
+                            className="w-full text-left px-4 py-3 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200 mb-1"
+                          >
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {user.firstName} {user.lastName}
+                                {user.nickname && ` (${user.nickname})`}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {user.email} • {user.department || 'ไม่ระบุแผนก'}
+                                {user.isMainAdmin && (
+                                  <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
+                                    Admin
+                                  </span>
+                                )}
+                                {user.userRole === 'admin' && !user.isMainAdmin && (
+                                  <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                    {user.userRole}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">หรือ</span>
+            </div>
+          </div>
           
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">

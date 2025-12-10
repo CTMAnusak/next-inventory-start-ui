@@ -6,35 +6,7 @@
  * กรุณาเพิกเฉยต่อการแจ้งเตือน secret scanning - ไฟล์นี้เป็นข้อมูลจำลองเท่านั้น
  */
 
-// Mockup User Data
-export const mockUser = {
-  id: 'mock-user-1',
-  email: 'user@example.com',
-  password: 'MOCK_PASSWORD_123456', // รหัสผ่านสำหรับ user ธรรมดา (MOCK DATA)
-  firstName: 'สมชาย',
-  lastName: 'ใจดี',
-  nickname: 'ชาย',
-  department: 'IT',
-  phone: '0812345678',
-  userType: 'individual' as const,
-  office: 'สำนักงานใหญ่',
-  officeId: 'office-1',
-  officeName: 'สำนักงานใหญ่',
-  isMainAdmin: false,
-  userRole: 'user' as const,
-  pendingDeletion: false,
-};
-
-export const mockAdminUser = {
-  ...mockUser,
-  id: 'mock-admin-1',
-  email: 'admin@example.com',
-  password: 'admin123', // รหัสผ่านสำหรับ admin
-  firstName: 'ผู้ดูแล',
-  lastName: 'ระบบ',
-  isMainAdmin: true,
-  userRole: 'admin' as const,
-};
+// Mockup Users List - รวมทั้งหมดไว้ในชุดเดียวกัน
 
 // Mockup Category Configs
 export const mockCategoryConfigs = [
@@ -189,6 +161,7 @@ export const mockITReports = [
     status: 'pending',
     priority: 'medium',
     reportedBy: 'สมชาย ใจดี',
+    email: 'user@example.com', // ตรงกับ mock-user-1
     department: 'IT',
     reportedAt: new Date('2024-03-01'),
     issueType: 'network',
@@ -201,6 +174,7 @@ export const mockITReports = [
     status: 'in-progress',
     priority: 'high',
     reportedBy: 'สมหญิง ใจงาม',
+    email: 'somying@example.com', // ตรงกับ user-3
     department: 'Sales',
     reportedAt: new Date('2024-03-02'),
     issueType: 'hardware',
@@ -213,11 +187,52 @@ export const mockITReports = [
     status: 'resolved',
     priority: 'low',
     reportedBy: 'สมพงษ์ ดีเด่น',
+    email: 'sompong@example.com', // ตรงกับ user-4
     department: 'HR',
     reportedAt: new Date('2024-02-28'),
     issueType: 'printer',
     assignedTo: 'ช่างไอที',
     resolvedAt: new Date('2024-03-01'),
+  },
+  {
+    _id: 'it-4',
+    title: 'ปัญหา Server ล่ม',
+    description: 'Server หลักล่มไม่สามารถเข้าถึงระบบได้',
+    status: 'pending',
+    priority: 'very_urgent',
+    reportedBy: 'แอดมิน ผู้ดูแลระบบ',
+    email: 'admin@example.com', // ตรงกับ mock-admin-1
+    department: 'IT',
+    reportedAt: new Date('2024-03-05'),
+    issueType: 'network',
+    assignedTo: null,
+  },
+  {
+    _id: 'it-5',
+    title: 'ขอ User Account Email ระบบงาน',
+    description: 'ต้องการสร้าง email account สำหรับพนักงานใหม่',
+    status: 'in-progress',
+    priority: 'normal',
+    reportedBy: 'แอดมิน ผู้ดูแลระบบ',
+    email: 'admin@example.com', // ตรงกับ mock-admin-1
+    department: 'IT',
+    reportedAt: new Date('2024-03-04'),
+    issueType: 'account',
+    assignedTo: 'ช่างไอที',
+  },
+  {
+    _id: 'it-6',
+    title: 'ปัญหา TV/VDO Conference',
+    description: 'อุปกรณ์ Video Conference ไม่สามารถเชื่อมต่อได้',
+    status: 'completed',
+    priority: 'medium',
+    reportedBy: 'แอดมิน ผู้ดูแลระบบ',
+    email: 'admin@example.com', // ตรงกับ mock-admin-1
+    department: 'IT',
+    reportedAt: new Date('2024-02-25'),
+    issueType: 'tv_vdo',
+    assignedTo: 'ช่างไอที',
+    resolvedAt: new Date('2024-02-27'),
   },
 ];
 
@@ -247,10 +262,41 @@ export const mockEquipmentTracking = [
   },
 ];
 
-// Mockup Users List (for admin)
 export const mockUsers = [
-  mockUser,
-  mockAdminUser,
+  {
+    id: 'mock-user-1',
+    email: 'user@example.com',
+    password: '123456', // รหัสผ่านสำหรับ user ธรรมดา (MOCK DATA)
+    firstName: 'สมชาย',
+    lastName: 'ใจดี',
+    nickname: 'ชาย',
+    department: 'IT',
+    phone: '0812345678',
+    userType: 'individual' as const,
+    office: 'สำนักงานใหญ่',
+    officeId: 'office-1',
+    officeName: 'สำนักงานใหญ่',
+    isMainAdmin: false,
+    userRole: 'user' as const,
+    pendingDeletion: false,
+  },
+  {
+    id: 'mock-admin-1',
+    email: 'admin@example.com',
+    password: '123456', // รหัสผ่านสำหรับ admin
+    firstName: 'แอดมิน',
+    lastName: 'ผู้ดูแลระบบ',
+    nickname: 'แอดมินแอมป์',
+    department: 'IT',
+    phone: '0898765432',
+    userType: 'individual' as const,
+    office: 'สำนักงานใหญ่',
+    officeId: 'office-1',
+    officeName: 'สำนักงานใหญ่',
+    isMainAdmin: true,
+    userRole: 'admin' as const,
+    pendingDeletion: false,
+  },
   {
     id: 'user-3',
     email: 'somying@example.com',

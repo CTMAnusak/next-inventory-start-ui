@@ -22,6 +22,7 @@ import DatePicker from '@/components/DatePicker';
 import SearchableSelect from '@/components/SearchableSelect';
 import SerialNumberSelector from '@/components/SerialNumberSelector';
 import ExcelJS from 'exceljs';
+import { simulateApiDelay, mockUsers, mockCategoryConfigs, mockInventoryItems, mockStatusConfigs, mockConditionConfigs } from '@/lib/mockup-data';
 
 // Memoized wrapper to prevent unnecessary re-renders
 const MemoizedSerialNumberSelector = React.memo(({ 
@@ -227,12 +228,10 @@ export default function AdminEquipmentReportsPage() {
 
   const fetchConfigs = async () => {
     try {
-      const response = await fetch('/api/inventory-config');
-      if (response.ok) {
-        const data = await response.json();
-        setStatusConfigs(data.statusConfigs || []);
-        setConditionConfigs(data.conditionConfigs || []);
-      }
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(200);
+      setStatusConfigs(mockStatusConfigs.map(s => ({ id: s.id, name: s.name })));
+      setConditionConfigs(mockConditionConfigs.map(c => ({ id: c.id, name: c.name })));
     } catch (error) {
       console.error('Error fetching configs:', error);
     }
@@ -253,54 +252,112 @@ export default function AdminEquipmentReportsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [requestResponse, returnResponse] = await Promise.all([
-        fetch('/api/admin/equipment-reports/requests'),
-        fetch('/api/admin/equipment-reports/returns')
-      ]);
-
-      if (requestResponse.ok) {
-        const requestData = await requestResponse.json();
-        setRequestLogs(requestData);
-      } else {
-        console.error('❌ Request API failed:', requestResponse.status, requestResponse.statusText);
-      }
-
-      if (returnResponse.ok) {
-        const returnData = await returnResponse.json();
-        
-        // 🔍 Debug: Log return data received from API
-        console.log('\n=== 🔍 RETURN DATA FROM API ===');
-        returnData.slice(0, 5).forEach((log: any, index: number) => {
-          console.log(`\nReturn Log ${index + 1}:`, {
-            _id: log._id,
-            userId: log.userId,
-            firstName: log.firstName,
-            lastName: log.lastName,
-            nickname: log.nickname,
-            department: log.department,
-            phone: log.phone,
-            office: log.office,
-            returnerFirstName: log.returnerFirstName,
-            returnerLastName: log.returnerLastName,
-            deliveryLocation: log.deliveryLocation || 'NOT FOUND',
-            itemsCount: log.items?.length,
-            items: log.items?.map((item: any) => ({
-              itemId: item.itemId,
-              itemName: item.itemName
-            }))
-          });
-        });
-        
-        setReturnLogs(returnData);
-      } else {
-        console.error('❌ Return API failed:', returnResponse.status, returnResponse.statusText);
-      }
-
-      if (!requestResponse.ok && !returnResponse.ok) {
-        toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-      }
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(500);
+      
+      // Mockup: Create mock request logs
+      const mockRequestLogs: RequestLog[] = [
+        {
+          _id: 'req-1',
+          firstName: 'สมชาย',
+          lastName: 'ใจดี',
+          nickname: 'ชาย',
+          department: 'IT',
+          office: 'สำนักงานใหญ่',
+          requestDate: new Date('2024-03-01').toISOString(),
+          urgency: 'normal',
+          deliveryLocation: 'สำนักงานใหญ่',
+          phone: '0812345678',
+          email: 'user@example.com',
+          reason: 'ต้องการใช้งาน',
+          items: [
+            {
+              itemId: 'inv-1',
+              itemName: 'โน๊ตบุ๊ค Dell',
+              quantity: 1,
+              category: 'คอมพิวเตอร์',
+              categoryId: 'cat_computer',
+              serialNumbers: ['SN123456'],
+              assignedSerialNumbers: ['SN123456'],
+              statusOnRequest: 'มี',
+              conditionOnRequest: 'ใช้งานได้',
+              assignedQuantity: 1,
+              itemApproved: true,
+              approvedAt: new Date('2024-03-01').toISOString()
+            }
+          ],
+          submittedAt: new Date('2024-03-01').toISOString(),
+          status: 'completed'
+        },
+        {
+          _id: 'req-2',
+          firstName: 'สมหญิง',
+          lastName: 'ใจงาม',
+          nickname: 'หญิง',
+          department: 'Sales',
+          office: 'สำนักงานใหญ่',
+          requestDate: new Date('2024-03-02').toISOString(),
+          urgency: 'very_urgent',
+          deliveryLocation: 'สำนักงานใหญ่',
+          phone: '0823456789',
+          email: 'somying@example.com',
+          reason: 'ต้องการใช้งานด่วน',
+          items: [
+            {
+              itemId: 'inv-2',
+              itemName: 'เมาส์ Logitech',
+              quantity: 2,
+              category: 'เมาส์',
+              categoryId: 'cat_mouse',
+              serialNumbers: ['SN789012', 'SN789013'],
+              assignedSerialNumbers: ['SN789012', 'SN789013'],
+              statusOnRequest: 'มี',
+              conditionOnRequest: 'ใช้งานได้',
+              assignedQuantity: 2,
+              itemApproved: true,
+              approvedAt: new Date('2024-03-02').toISOString()
+            }
+          ],
+          submittedAt: new Date('2024-03-02').toISOString(),
+          status: 'completed'
+        }
+      ];
+      
+      // Mockup: Create mock return logs
+      const mockReturnLogs: ReturnLog[] = [
+        {
+          _id: 'return-1',
+          firstName: 'สมชาย',
+          lastName: 'ใจดี',
+          nickname: 'ชาย',
+          department: 'IT',
+          office: 'สำนักงานใหญ่',
+          phone: '0812345678',
+          email: 'user@example.com',
+          returnDate: new Date('2024-03-15').toISOString(),
+          deliveryLocation: 'สำนักงานใหญ่',
+          items: [
+            {
+              itemId: 'inv-1',
+              itemName: 'โน๊ตบุ๊ค Dell',
+              quantity: 1,
+              category: 'คอมพิวเตอร์',
+              serialNumber: 'SN123456',
+              statusOnReturn: 'มี',
+              conditionOnReturn: 'ใช้งานได้',
+              approvalStatus: 'approved',
+              approvedAt: new Date('2024-03-15').toISOString()
+            }
+          ],
+          submittedAt: new Date('2024-03-15').toISOString()
+        }
+      ];
+      
+      setRequestLogs(mockRequestLogs);
+      setReturnLogs(mockReturnLogs);
     } catch (error) {
-      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      console.error('Error fetching data:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setLoading(false);
     }
@@ -309,19 +366,16 @@ export default function AdminEquipmentReportsPage() {
   // Fetch current inventory data to get updated item names
   const fetchInventoryData = async () => {
     try {
-      const response = await fetch('/api/inventory');
-      if (response.ok) {
-        const data = await response.json();
-        const items = data.items || [];
-        
-        // Create a map of itemId to current itemName
-        const inventoryMap: {[key: string]: string} = {};
-        items.forEach((item: any) => {
-          inventoryMap[item._id] = item.itemName;
-        });
-        
-        setInventoryItems(inventoryMap);
-      }
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(200);
+      
+      // Create a map of itemId to current itemName from mockInventoryItems
+      const inventoryMap: {[key: string]: string} = {};
+      mockInventoryItems.forEach((item: any) => {
+        inventoryMap[item._id] = item.itemName;
+      });
+      
+      setInventoryItems(inventoryMap);
     } catch (error) {
       console.error('Error fetching inventory data:', error);
     }

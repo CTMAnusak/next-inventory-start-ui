@@ -88,8 +88,27 @@ export default function DashboardPage() {
 
   // Static data initialization
   const initializeStaticData = useCallback(() => {
+    if (!user) {
+      setOwnedItems([]);
+      setDataLoaded(true);
+      return;
+    }
+    
+    // Filter mockOwnedItems by logged-in user
+    // Match by firstName, lastName, and office
+    const userOwnedItems = mockOwnedItems.filter(item => {
+      // For branch users, match by office
+      if (user.userType === 'branch') {
+        return item.office === user.office;
+      }
+      // For individual users, match by firstName and lastName
+      return item.firstName === user.firstName && 
+             item.lastName === user.lastName &&
+             item.office === user.office;
+    });
+    
     // Transform mockOwnedItems to include category field
-    const transformedItems = mockOwnedItems.map(item => {
+    const transformedItems = userOwnedItems.map(item => {
       const category = mockCategoryConfigs.find(c => c.id === item.categoryId)?.name || item.categoryId || '';
       return {
         ...item,
@@ -98,15 +117,15 @@ export default function DashboardPage() {
     });
     setOwnedItems(transformedItems);
     setDataLoaded(true);
-  }, []);
+  }, [user]);
 
 
-  // Initialize static data when component loads
+  // Initialize static data when component loads or user changes
   useEffect(() => {
-    if (!dataLoaded) {
+    if (user && !dataLoaded) {
       initializeStaticData();
     }
-  }, [dataLoaded, initializeStaticData]);
+  }, [user, dataLoaded, initializeStaticData]);
 
   // Simple refresh function for static data
   const refreshData = useCallback(() => {

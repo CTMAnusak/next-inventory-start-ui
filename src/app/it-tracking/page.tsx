@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { handleAuthError } from '@/lib/auth-error-handler';
 import { enableDragScroll } from '@/lib/drag-scroll';
 import AuthGuard from '@/components/AuthGuard';
-import { simulateApiDelay, mockITReports } from '@/lib/mockup-data';
+import { simulateApiDelay, mockITReports, mockUsers } from '@/lib/mockup-data';
 import SearchableSelect from '@/components/SearchableSelect';
 import DatePicker from '@/components/DatePicker';
 
@@ -189,11 +189,23 @@ export default function ITTrackingPage() {
   const fetchUserIssues = async () => {
     setIsLoading(true);
     try {
+      if (!user) {
+        setIssues([]);
+        setIsLoading(false);
+        return;
+      }
+      
       // Mockup: Use mockup data instead of API
       await simulateApiDelay(500);
       
+      // Filter mockITReports by logged-in user
+      // Match by email (more reliable than name)
+      const userReports = mockITReports.filter((report: any) => {
+        return report.email === user.email;
+      });
+      
       // Convert mock IT reports to issues format with all required properties
-      const mockIssues: IssueItem[] = mockITReports.map((report: any) => {
+      const mockIssues: IssueItem[] = userReports.map((report: any) => {
         // Parse reportedBy name to firstName and lastName
         const nameParts = (report.reportedBy || 'ผู้ใช้ตัวอย่าง').split(' ');
         const firstName = nameParts[0] || 'ผู้ใช้';
@@ -212,21 +224,24 @@ export default function ITTrackingPage() {
           ? new Date(report.reportedAt).toISOString().split('T')[0]
           : new Date().toISOString().split('T')[0];
         
+        // Get user info from mockUsers by email
+        const reportUser = mockUsers.find(u => u.email === report.email);
+        
         return {
           _id: report._id,
           issueId: `IT-${report._id}`,
-          firstName,
-          lastName,
-          nickname: firstName,
-          email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
-          phone: '0812345678',
-          department: report.department || 'IT',
-          office: 'สำนักงานใหญ่',
+          firstName: reportUser?.firstName || firstName,
+          lastName: reportUser?.lastName || lastName,
+          nickname: reportUser?.nickname || firstName,
+          email: report.email || `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
+          phone: reportUser?.phone || '0812345678',
+          department: reportUser?.department || report.department || 'IT',
+          office: reportUser?.office || 'สำนักงานใหญ่',
           issueCategory: report.issueType || 'other',
           customCategory: report.title,
-          urgency: report.priority || 'normal',
+          urgency: report.priority === 'very_urgent' ? 'very_urgent' : (report.priority === 'high' ? 'very_urgent' : 'normal'),
           description: report.description || '',
-          status: report.status || 'pending',
+          status: report.status === 'resolved' ? 'completed' : (report.status === 'in-progress' ? 'in_progress' : report.status) || 'pending',
           statusText: statusTextMap[report.status] || 'รอดำเนินการ',
           reportDate,
           acceptedDate: report.status === 'in-progress' ? reportDate : undefined,
@@ -234,7 +249,7 @@ export default function ITTrackingPage() {
           closedDate: report.status === 'closed' ? reportDate : undefined,
           notes: undefined,
           images: [],
-          userType: 'individual' as const,
+          userType: reportUser?.userType || 'individual' as const,
           assignedAdmin: report.assignedTo ? {
             name: report.assignedTo,
             email: 'admin@example.com'

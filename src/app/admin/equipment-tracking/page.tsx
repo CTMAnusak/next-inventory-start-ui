@@ -22,6 +22,7 @@ import SearchableSelect from '@/components/SearchableSelect';
 import { toast } from 'react-hot-toast';
 import { formatEquipmentTrackingDate } from '@/lib/thai-date-utils';
 import * as XLSX from 'xlsx';
+import { simulateApiDelay, mockInventoryItems, mockStatusConfigs, mockConditionConfigs, mockCategoryConfigs, mockUsers } from '@/lib/mockup-data';
 
 interface EquipmentTracking {
   _id: string;
@@ -118,35 +119,69 @@ export default function AdminEquipmentTrackingPage() {
   const fetchTrackingData = async (page: number = 1) => {
     setLoading(true);
     try {
-      // Build query parameters from filters
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '50'
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(500);
+      
+      // Convert mockInventoryItems to EquipmentTracking format
+      const mockTrackingData: EquipmentTracking[] = mockInventoryItems.map((item: any) => {
+        const user = mockUsers.find(u => `${u.firstName} ${u.lastName}` === `${item.firstName} ${item.lastName}`) || mockUsers[0];
+        const category = mockCategoryConfigs.find(c => c.id === item.categoryId);
+        const status = mockStatusConfigs.find(s => s.id === item.statusId);
+        const condition = mockConditionConfigs.find(c => c.id === item.conditionId);
+        
+        return {
+          _id: item._id,
+          userId: user.id,
+          firstName: item.firstName || user.firstName,
+          lastName: item.lastName || user.lastName,
+          nickname: item.nickname || user.nickname || '',
+          department: item.department || user.department || '',
+          office: item.office || user.office || '',
+          phone: item.phone || user.phone || '',
+          pendingDeletion: item.pendingDeletion || false,
+          userType: item.userType || user.userType || 'individual',
+          itemId: item._id,
+          itemName: item.itemName,
+          currentItemName: item.itemName,
+          quantity: item.quantity || 1,
+          serialNumber: item.serialNumber,
+          numberPhone: item.numberPhone,
+          category: category?.name || item.categoryId || '',
+          categoryId: item.categoryId,
+          categoryName: category?.name,
+          status: status?.id || item.statusId || '',
+          statusName: status?.name,
+          condition: condition?.id || item.conditionId || '',
+          conditionName: condition?.name,
+          source: item.source || 'user-owned',
+          dateAdded: item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString(),
+          requestDate: item.createdAt ? new Date(item.createdAt).toISOString() : new Date().toISOString(),
+          deliveryLocation: item.office || user.office || '',
+          urgency: 'normal',
+          reason: item.notes || ''
+        };
       });
       
-      if (departmentFilter) params.append('department', departmentFilter);
-      if (officeFilter) params.append('office', officeFilter);
-      
-      const response = await fetch(`/api/admin/equipment-tracking?${params.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTrackingData(data.data || data); // Support both old and new format
-        setCurrentPage(page);
-        
-        // Handle pagination data if available
-        if (data.pagination) {
-          setTotalPages(data.pagination.totalPages);
-          setTotalItems(data.pagination.totalItems);
-        } else {
-          // Fallback for old format
-          setTotalPages(Math.ceil((data.data || data).length / itemsPerPage));
-          setTotalItems((data.data || data).length);
-        }
-      } else {
-        toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      // Filter by department and office if provided
+      let filtered = mockTrackingData;
+      if (departmentFilter) {
+        filtered = filtered.filter(item => 
+          item.department.toLowerCase() === departmentFilter.toLowerCase()
+        );
       }
+      if (officeFilter) {
+        filtered = filtered.filter(item => 
+          item.office.toLowerCase() === officeFilter.toLowerCase()
+        );
+      }
+      
+      setTrackingData(filtered);
+      setCurrentPage(page);
+      setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+      setTotalItems(filtered.length);
     } catch (error) {
-      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      console.error('Error fetching tracking data:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setLoading(false);
     }

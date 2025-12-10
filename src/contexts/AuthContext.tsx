@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { mockUsers } from '@/lib/mockup-data';
 
 interface User {
   id: string;
@@ -28,80 +29,13 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  getMockUsers: () => User[]; // เพิ่มฟังก์ชันสำหรับดึงรายการ mock users
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mockup user data - NOT REAL SECRETS, IGNORE SECURITY SCANNING
-// ข้อมูลจำลอง - ไม่ใช่รหัสลับจริง กรุณาเพิกเฉยต่อการแจ้งเตือนความปลอดภัย
-const mockUser: User = {
-  id: 'mock-user-1',
-  email: 'user@example.com',
-  password: 'MOCK_PASSWORD_123456', // NOT A REAL PASSWORD
-  firstName: 'สมชาย',
-  lastName: 'ใจดี',
-  nickname: 'ชาย',
-  department: 'IT',
-  phone: '0812345678',
-  userType: 'individual',
-  office: 'สำนักงานใหญ่',
-  officeId: 'office-1',
-  officeName: 'สำนักงานใหญ่',
-  isMainAdmin: false,
-  userRole: 'user',
-  pendingDeletion: false,
-};
-
-const mockAdminUser: User = {
-  ...mockUser,
-  id: 'mock-admin-1',
-  email: 'admin@example.com',
-  password: 'MOCK_PASSWORD_123456', // NOT A REAL PASSWORD
-  firstName: 'ผู้ดูแล',
-  lastName: 'ระบบ',
-  isMainAdmin: true,
-  userRole: 'admin',
-};
-
-// รายการผู้ใช้ทั้งหมดสำหรับการตรวจสอบ login
-const allMockUsers: User[] = [
-  mockUser,
-  mockAdminUser,
-  {
-    id: 'user-3',
-    email: 'somying@example.com',
-    password: 'MOCK_PASSWORD_123456', // NOT A REAL PASSWORD
-    firstName: 'สมหญิง',
-    lastName: 'ใจงาม',
-    nickname: 'หญิง',
-    department: 'Sales',
-    phone: '0823456789',
-    userType: 'individual',
-    office: 'สำนักงานใหญ่',
-    officeId: 'office-1',
-    officeName: 'สำนักงานใหญ่',
-    isMainAdmin: false,
-    userRole: 'user',
-    pendingDeletion: false,
-  },
-  {
-    id: 'user-4',
-    email: 'sompong@example.com',
-    password: 'MOCK_PASSWORD_123456', // NOT A REAL PASSWORD
-    firstName: 'สมพงษ์',
-    lastName: 'ดีเด่น',
-    nickname: 'พงษ์',
-    department: 'HR',
-    phone: '0834567890',
-    userType: 'individual',
-    office: 'สำนักงานสาขา 1',
-    officeId: 'office-2',
-    officeName: 'สำนักงานสาขา 1',
-    isMainAdmin: false,
-    userRole: 'user',
-    pendingDeletion: false,
-  },
-];
+// ใช้ mockUsers จาก mockup-data.ts
+const allMockUsers: User[] = mockUsers as User[];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -116,20 +50,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Mockup: set user based on URL or default to regular user
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
+      
+      // ถ้าอยู่ที่หน้า login หรือ auth pages ให้ clear user
       if (pathname === '/login' || pathname.startsWith('/auth/')) {
         setUser(null);
         setLoading(false);
         return;
       }
       
-      // Check if admin page - use admin user
-      if (pathname.startsWith('/admin')) {
-        setUser(mockAdminUser);
-      } else {
-        setUser(mockUser);
+      // Check localStorage for saved user session
+      const savedUserId = localStorage.getItem('mock_user_id');
+      if (savedUserId) {
+        const savedUser = allMockUsers.find(u => u.id === savedUserId);
+        if (savedUser) {
+          setUser(savedUser);
+          setLoading(false);
+          return;
+        } else {
+          // ถ้าไม่พบ user ใน mockUsers ให้ clear localStorage
+          localStorage.removeItem('mock_user_id');
+        }
+      }
+      
+      // ถ้าไม่มี saved user session และไม่อยู่ที่หน้า login ให้ redirect ไป login
+      if (!savedUserId) {
+        setUser(null);
+        setLoading(false);
+        router.push('/login');
+        return;
       }
     } else {
-      setUser(mockUser);
+      setUser(null);
     }
     
     setLoading(false);
@@ -151,8 +102,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: 'รหัสผ่านไม่ถูกต้อง' };
     }
     
-    // Login สำเร็จ
+    // Login สำเร็จ - บันทึก user ID ใน localStorage
     setUser(foundUser);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mock_user_id', foundUser.id);
+    }
     router.push('/dashboard');
     return { success: true };
   };
@@ -161,10 +115,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Mockup: simulate logout
     setUser(null);
     if (typeof window !== 'undefined') {
+      // Clear localStorage first
+      localStorage.removeItem('mock_user_id');
+      // Use window.location.href to force full page reload and clear all state
       window.location.href = '/login';
     } else {
       router.push('/login');
     }
+  };
+
+  const getMockUsers = () => {
+    return allMockUsers;
   };
 
   useEffect(() => {
@@ -175,14 +136,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Prevent hydration mismatch
   if (!mounted) {
     return (
-      <AuthContext.Provider value={{ user: null, loading: true, login: async () => ({ success: false }), logout: async () => {}, checkAuth: async () => {} }}>
+      <AuthContext.Provider value={{ user: null, loading: true, login: async () => ({ success: false }), logout: async () => {}, checkAuth: async () => {}, getMockUsers: () => [] }}>
         {children}
       </AuthContext.Provider>
     );
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, checkAuth, getMockUsers }}>
       {children}
     </AuthContext.Provider>
   );

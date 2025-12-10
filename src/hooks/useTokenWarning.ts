@@ -12,20 +12,18 @@ export function useTokenWarning() {
 
   useEffect(() => {
     // Mockup: Simulate token expiry check
-    // In real app, this would check actual token
-    // For UI demo, we'll set a mock expiry time
-    const mockExpiryTime = 3600; // 1 hour in seconds
-    setTimeToExpiry(mockExpiryTime);
+    // จำลองว่าตอนนี้เข้าใช้งานมาแล้ว 5 วัน (ระบบจำกัดไว้ 7 วัน)
+    // ดังนั้นเหลืออีก 2 วัน = 2 * 24 * 60 * 60 = 172800 วินาที
+    // ไม่แสดงแจ้งเตือนเพราะยังไม่ใกล้หมดอายุ (แสดงเมื่อเหลือน้อยกว่า 60 นาที)
     
-    // Mockup: Show warning modal after 5 seconds for demo
-    const warningTimer = setTimeout(() => {
-      setShowModal(true);
-      setHasWarned(true);
-    }, 5000);
-
-    return () => {
-      clearTimeout(warningTimer);
-    };
+    const daysRemaining = 2; // เหลืออีก 2 วัน
+    const secondsRemaining = daysRemaining * 24 * 60 * 60; // แปลงเป็นวินาที
+    setTimeToExpiry(secondsRemaining);
+    
+    // ไม่แสดงแจ้งเตือนเพราะยังเหลือเวลาอีกมาก (มากกว่า 60 นาที)
+    // แจ้งเตือนจะแสดงเมื่อเหลือเวลาน้อยกว่า 60 นาที
+    setShowModal(false);
+    setHasWarned(false);
   }, []);
 
   const handleCloseModal = () => {

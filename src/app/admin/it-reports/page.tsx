@@ -28,6 +28,7 @@ import DatePicker from '@/components/DatePicker';
 import SearchableSelect from '@/components/SearchableSelect';
 import { toast } from 'react-hot-toast';
 import ExcelJS from 'exceljs';
+import { mockITReports, simulateApiDelay } from '@/lib/mockup-data';
 
 interface ITIssue {
   _id: string;
@@ -222,34 +223,110 @@ export default function AdminITReportsPage() {
   const fetchIssues = async (page = 1, statusOverride?: TabType, searchOverride?: string) => {
     setLoading(true);
     try {
-      // Build query params
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(500);
+      
       const targetStatus = statusOverride ?? activeTab;
       const searchValue = searchOverride !== undefined ? searchOverride : searchTerm;
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: itemsPerPage.toString(),
-        status: targetStatus,
+      
+      // Convert mockITReports to ITIssue format
+      let mockIssues: ITIssue[] = mockITReports.map((report: any) => {
+        // Parse reportedBy name to firstName and lastName
+        const nameParts = (report.reportedBy || 'ผู้ใช้ตัวอย่าง').split(' ');
+        const firstName = nameParts[0] || 'ผู้ใช้';
+        const lastName = nameParts.slice(1).join(' ') || 'ตัวอย่าง';
+        
+        // Map status from mockITReports to ITIssue status
+        const statusMap: Record<string, 'pending' | 'in_progress' | 'completed' | 'closed'> = {
+          'pending': 'pending',
+          'in-progress': 'in_progress',
+          'resolved': 'completed',
+          'closed': 'closed'
+        };
+        
+        // Map urgency
+        const urgencyMap: Record<string, 'normal' | 'very_urgent'> = {
+          'low': 'normal',
+          'medium': 'normal',
+          'high': 'very_urgent'
+        };
+        
+        // Map issueType to category
+        const categoryMap: Record<string, string> = {
+          'network': 'ปัญหา Internet',
+          'hardware': 'ปัญหา Notebook/Computer',
+          'printer': 'ปัญหา ปริ้นเตอร์ และ อุปกรณ์'
+        };
+        
+        // Generate issueId
+        const issueId = `IT-${report._id?.replace('it-', '').toUpperCase() || '001'}`;
+        
+        // Get user info from mockUsers if available
+        const mockUsers = [
+          { firstName: 'สมชาย', lastName: 'ใจดี', email: 'user@example.com', phone: '0812345678', office: 'สำนักงานใหญ่' },
+          { firstName: 'สมหญิง', lastName: 'ใจงาม', email: 'somying@example.com', phone: '0823456789', office: 'สำนักงานใหญ่' },
+          { firstName: 'สมพงษ์', lastName: 'ดีเด่น', email: 'sompong@example.com', phone: '0834567890', office: 'สำนักงานสาขา 1' }
+        ];
+        const userInfo = mockUsers.find(u => `${u.firstName} ${u.lastName}` === report.reportedBy) || mockUsers[0];
+        
+        return {
+          _id: report._id,
+          issueId: issueId,
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName,
+          nickname: '',
+          phone: userInfo.phone,
+          email: userInfo.email,
+          department: report.department || '',
+          office: userInfo.office,
+          issueCategory: categoryMap[report.issueType] || report.issueType || report.title || '',
+          urgency: urgencyMap[report.priority] || 'normal',
+          description: report.description || '',
+          status: statusMap[report.status] || 'pending',
+          reportDate: report.reportedAt ? new Date(report.reportedAt).toISOString() : new Date().toISOString(),
+          acceptedDate: report.status !== 'pending' ? report.reportedAt ? new Date(new Date(report.reportedAt).getTime() + 86400000).toISOString() : undefined : undefined,
+          completedDate: report.status === 'resolved' || report.status === 'closed' ? (report.resolvedAt ? new Date(report.resolvedAt).toISOString() : undefined) : undefined,
+          closedDate: report.status === 'closed' ? (report.resolvedAt ? new Date(report.resolvedAt).toISOString() : undefined) : undefined,
+          userType: 'individual' as const,
+          assignedAdmin: report.assignedTo ? { name: report.assignedTo, email: 'admin@example.com' } : undefined,
+          images: []
+        };
       });
-
-      // Add search filters if present
-      if (searchValue) params.append('search', searchValue);
-
-      const response = await fetch(`/api/admin/it-reports?${params.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        setIssues(data.issues || []);
-        setTotalPages(data.pagination?.pages || 1);
-        setTotalItems(data.pagination?.total || 0);
-        setCurrentPage(page);
-        setTabCounts(prev => ({
-          ...prev,
-          [targetStatus]: data.pagination?.total || 0
-        }));
-      } else {
-        toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      
+      // Filter by status
+      mockIssues = mockIssues.filter(issue => {
+        if (targetStatus === 'pending') return issue.status === 'pending';
+        if (targetStatus === 'in_progress') return issue.status === 'in_progress';
+        if (targetStatus === 'completed') return issue.status === 'completed';
+        if (targetStatus === 'closed') return issue.status === 'closed';
+        return true;
+      });
+      
+      // Filter by search term (Issue ID)
+      if (searchValue) {
+        mockIssues = mockIssues.filter(issue => 
+          issue.issueId.toLowerCase().includes(searchValue.toLowerCase())
+        );
       }
+      
+      // Pagination
+      const totalItems = mockIssues.length;
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      const startIndex = (page - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedIssues = mockIssues.slice(startIndex, endIndex);
+      
+      setIssues(paginatedIssues);
+      setTotalPages(totalPages);
+      setTotalItems(totalItems);
+      setCurrentPage(page);
+      setTabCounts(prev => ({
+        ...prev,
+        [targetStatus]: totalItems
+      }));
     } catch (error) {
-      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      console.error('Error fetching issues:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setLoading(false);
     }
@@ -271,26 +348,47 @@ export default function AdminITReportsPage() {
 
   const fetchTabCount = async (status: TabType, searchOverride?: string) => {
     try {
-      const params = new URLSearchParams({
-        page: '1',
-        limit: '1',
-        status,
-      });
-
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(200);
+      
       const searchValue = searchOverride !== undefined ? searchOverride : searchTerm;
+      
+      // Convert and filter mockITReports
+      let mockIssues = mockITReports.map((report: any) => {
+        const statusMap: Record<string, 'pending' | 'in_progress' | 'completed' | 'closed'> = {
+          'pending': 'pending',
+          'in-progress': 'in_progress',
+          'resolved': 'completed',
+          'closed': 'closed'
+        };
+        return statusMap[report.status] || 'pending';
+      });
+      
+      // Filter by status
+      mockIssues = mockIssues.filter(issueStatus => issueStatus === status);
+      
+      // Filter by search if provided
       if (searchValue) {
-        params.append('search', searchValue);
+        const filtered = mockITReports.filter((report: any) => {
+          const issueId = `IT-${report._id?.replace('it-', '').toUpperCase() || '001'}`;
+          return issueId.toLowerCase().includes(searchValue.toLowerCase());
+        });
+        mockIssues = filtered.map((report: any) => {
+          const statusMap: Record<string, 'pending' | 'in_progress' | 'completed' | 'closed'> = {
+            'pending': 'pending',
+            'in-progress': 'in_progress',
+            'resolved': 'completed',
+            'closed': 'closed'
+          };
+          return statusMap[report.status] || 'pending';
+        }).filter(issueStatus => issueStatus === status);
       }
-
-      const response = await fetch(`/api/admin/it-reports?${params.toString()}`);
-      if (response.ok) {
-        const data = await response.json();
-        const total = data.pagination?.total || 0;
-        setTabCounts(prev => ({
-          ...prev,
-          [status]: total
-        }));
-      }
+      
+      const total = mockIssues.length;
+      setTabCounts(prev => ({
+        ...prev,
+        [status]: total
+      }));
     } catch (error) {
       console.error('Failed to fetch tab count:', error);
     }
@@ -401,22 +499,11 @@ export default function AdminITReportsPage() {
 
   const fetchItAdmins = async () => {
     try {
-      const response = await fetch('/api/admin/users');
-      if (response.ok) {
-        const users = await response.json();
-        // กรองเฉพาะ users ที่มี userRole = 'it_admin' เท่านั้น
-        const itAdminUsers = users
-          .filter((user: any) => user.userRole === 'it_admin')
-          .map((user: any) => ({
-            id: user._id,
-            userId: user.user_id,
-            name: user.userType === 'individual' 
-              ? `${user.firstName} ${user.lastName}`.trim()
-              : user.office,
-            email: user.email
-          }));
-        setItAdmins(itAdminUsers);
-      }
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(300);
+      
+      // Mockup: Return empty array for IT admins (can add mock admins later if needed)
+      setItAdmins([]);
     } catch (error) {
       console.error('Failed to fetch IT admins:', error);
     }

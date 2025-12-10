@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
+import { simulateApiDelay, mockITReports, mockUsers, mockInventoryItems } from '@/lib/mockup-data';
 
 interface DashboardStats {
   // การ์ดด้านบน (ทั้งหมด)
@@ -76,18 +77,94 @@ export default function AdminDashboardPage() {
   const fetchStats = async (forceRefresh: boolean = false) => {
     setLoading(true);
     try {
-      const url = forceRefresh 
-        ? `/api/admin/dashboard?month=${selectedMonth}&year=${selectedYear}&userType=${selectedUserType}&forceRefresh=true`
-        : `/api/admin/dashboard?month=${selectedMonth}&year=${selectedYear}&userType=${selectedUserType}`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      } else {
-        toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(500);
+      
+      // Calculate stats from mockup data
+      const currentYear = selectedYear;
+      const currentMonth = selectedMonth === 'all' ? null : selectedMonth;
+      
+      // Filter users by type
+      let filteredUsers = mockUsers;
+      if (selectedUserType === 'individual') {
+        filteredUsers = mockUsers.filter(u => u.userType === 'individual');
+      } else if (selectedUserType === 'branch') {
+        filteredUsers = mockUsers.filter(u => u.userType === 'branch');
       }
+      
+      // Calculate monthly data
+      const monthlyIssues: Array<{ month: string; count: number }> = [];
+      const monthlyRequests: Array<{ month: string; count: number }> = [];
+      const monthlyReturns: Array<{ month: string; count: number }> = [];
+      
+      // Generate monthly data for current year
+      for (let month = 1; month <= 12; month++) {
+        const monthStr = `${currentYear}-${month.toString().padStart(2, '0')}`;
+        monthlyIssues.push({ month: monthStr, count: month === 3 ? 3 : 0 });
+        monthlyRequests.push({ month: monthStr, count: month === 3 ? 2 : 0 });
+        monthlyReturns.push({ month: monthStr, count: month === 3 ? 1 : 0 });
+      }
+      
+      // Calculate issues by category
+      const issuesByCategory = [
+        { category: 'ปัญหา Internet', count: 1, percentage: 33.3 },
+        { category: 'ปัญหา Notebook/Computer', count: 1, percentage: 33.3 },
+        { category: 'ปัญหา ปริ้นเตอร์ และ อุปกรณ์', count: 1, percentage: 33.3 }
+      ];
+      
+      // Calculate requests by urgency
+      const requestsByUrgency = [
+        { urgency: 'ปกติ', count: 1, percentage: 50 },
+        { urgency: 'ด่วนมาก', count: 1, percentage: 50 }
+      ];
+      
+      // Calculate period-specific stats
+      const periodIssues = currentMonth 
+        ? monthlyIssues.find(m => m.month === `${currentYear}-${currentMonth.toString().padStart(2, '0')}`)?.count || 0
+        : monthlyIssues.filter(m => m.month.startsWith(`${currentYear}-`)).reduce((sum, m) => sum + m.count, 0);
+      
+      const periodRequests = currentMonth
+        ? monthlyRequests.find(m => m.month === `${currentYear}-${currentMonth.toString().padStart(2, '0')}`)?.count || 0
+        : monthlyRequests.filter(m => m.month.startsWith(`${currentYear}-`)).reduce((sum, m) => sum + m.count, 0);
+      
+      const periodReturns = currentMonth
+        ? monthlyReturns.find(m => m.month === `${currentYear}-${currentMonth.toString().padStart(2, '0')}`)?.count || 0
+        : monthlyReturns.filter(m => m.month.startsWith(`${currentYear}-`)).reduce((sum, m) => sum + m.count, 0);
+      
+      const mockStats: DashboardStats = {
+        // Total stats (all time)
+        totalIssues: mockITReports.length,
+        totalRequests: 2,
+        totalReturns: 1,
+        totalUsers: filteredUsers.length,
+        totalInventoryItems: mockInventoryItems.length,
+        totalInventoryCount: mockInventoryItems.reduce((sum, item) => sum + (item.quantity || 1), 0),
+        userAddedItems: 1,
+        lowStockItems: 0,
+        
+        // Period-specific stats
+        pendingIssues: mockITReports.filter(i => i.status === 'pending').length,
+        inProgressIssues: mockITReports.filter(i => i.status === 'in-progress').length,
+        completedIssues: mockITReports.filter(i => i.status === 'resolved').length,
+        closedIssues: mockITReports.filter(i => i.status === 'closed').length,
+        urgentIssues: mockITReports.filter(i => i.priority === 'high').length,
+        normalIssues: mockITReports.filter(i => i.priority !== 'high').length,
+        totalInventoryItemsInPeriod: currentMonth ? mockInventoryItems.length : mockInventoryItems.length,
+        lowStockItemsInPeriod: 0,
+        userAddedItemsInPeriod: currentMonth === 3 ? 1 : 0,
+        
+        // Charts data
+        monthlyIssues,
+        monthlyRequests,
+        monthlyReturns,
+        issuesByCategory,
+        requestsByUrgency
+      };
+      
+      setStats(mockStats);
     } catch (error) {
-      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      console.error('Error fetching stats:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
     } finally {
       setLoading(false);
     }

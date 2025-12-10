@@ -33,15 +33,13 @@ export default function Layout({ children }: LayoutProps) {
   const handleLogout = async () => {
     if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
       try {
+        // logout() จะ redirect ไป /login เองแล้ว ไม่ต้อง reload เพิ่ม
         await logout();
-        // เพิ่มการรีเฟรชหน้าเว็บเพื่อให้แน่ใจว่าไปหน้า login
-        if (typeof window !== 'undefined') {
-          window.location.reload();
-        }
       } catch (error) {
         console.error('Logout error:', error);
-        // ถ้า logout ไม่สำเร็จ ให้รีเฟรชหน้าเว็บเพื่อไปหน้า login
+        // ถ้า logout ไม่สำเร็จ ให้ redirect ไปหน้า login
         if (typeof window !== 'undefined') {
+          localStorage.removeItem('mock_user_id');
           window.location.href = '/login';
         }
       }

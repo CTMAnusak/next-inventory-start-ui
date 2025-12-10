@@ -536,6 +536,20 @@ export default function AdminInventoryPage() {
       }));
       
       setItems(freshItems);
+      
+      // Pre-fetch breakdown data for all items to avoid loading delay
+      // Use Promise.all to fetch all breakdowns in parallel
+      const breakdownPromises = freshItems.map(item => 
+        fetchBreakdown(item.itemName, item.categoryId).catch(err => {
+          console.error(`Failed to pre-fetch breakdown for ${item.itemName}:`, err);
+          return null;
+        })
+      );
+      
+      // Fetch all breakdowns in parallel (don't await to avoid blocking UI)
+      Promise.all(breakdownPromises).then(() => {
+        console.log('✅ Pre-fetched breakdown data for all items');
+      });
     } catch (error) {
       toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
     } finally {
@@ -547,16 +561,106 @@ export default function AdminInventoryPage() {
   const fetchBreakdown = async (itemName: string, categoryId: string) => {
     const cacheKey = `${itemName}_${categoryId}`;
     
+    // Check cache first
+    if (breakdownData[cacheKey]) {
+      return breakdownData[cacheKey];
+    }
+    
     try {
       // Mockup: Use mockup data instead of API
-      await simulateApiDelay(300);
+      // ลด delay จาก 300ms เป็น 0 เพื่อให้โหลดเร็วขึ้น
+      await simulateApiDelay(0);
       
-      // Mockup: Return mock breakdown data
-      const mockBreakdown = {
+      // Find item in mockInventoryItems
+      const item = mockInventoryItems.find((i: any) => i.itemName === itemName && i.categoryId === categoryId);
+      
+      if (!item) {
+        const emptyBreakdown = {
         adminGroupedBreakdown: [],
         userGroupedBreakdown: [],
-        totalQuantity: 10,
-        availableQuantity: 5,
+          totalQuantity: 0,
+          availableQuantity: 0,
+        };
+        setBreakdownData(prev => ({
+          ...prev,
+          [cacheKey]: emptyBreakdown
+        }));
+        return emptyBreakdown;
+      }
+      
+      const totalQuantity = item.quantity || item.totalQuantity || 10;
+      const availableQuantity = item.availableQuantity || 5;
+      // ใช้ statusId จาก item โดยตรง (ไม่ต้องแปลง) เพื่อให้ getStatusName แปลงเป็นชื่อสถานะได้ถูกต้อง
+      const statusId = item.statusId || 'status_available';
+      const conditionId = item.conditionId || 'cond_working';
+      
+      // ตรวจสอบว่ามี serialNumber หรือไม่
+      const hasSerialNumber = item.serialNumbers && item.serialNumbers.length > 0;
+      const isSimCard = categoryId === 'cat_sim_card';
+      
+      // สร้าง adminGroupedBreakdown ที่ถูกต้อง
+      const adminGroupedBreakdown: Array<{
+        statusId: string;
+        conditionId: string;
+        type: 'withoutSN' | 'withSN' | 'withPhone';
+        count: number;
+      }> = [];
+      
+      if (isSimCard) {
+        // สำหรับซิมการ์ด: แบ่งเป็น withPhone
+        adminGroupedBreakdown.push({
+          statusId,
+          conditionId,
+          type: 'withPhone',
+          count: totalQuantity
+        });
+      } else if (hasSerialNumber) {
+        // สำหรับอุปกรณ์ที่มี SN: แบ่งเป็น withSN
+        adminGroupedBreakdown.push({
+          statusId,
+          conditionId,
+          type: 'withSN',
+          count: totalQuantity
+        });
+      } else {
+        // สำหรับอุปกรณ์ที่ไม่มี SN: แบ่งเป็น withoutSN
+        adminGroupedBreakdown.push({
+          statusId,
+          conditionId,
+          type: 'withoutSN',
+          count: totalQuantity
+        });
+      }
+      
+      // Mockup: Return mock breakdown data with correct structure
+      const mockBreakdown = {
+        adminGroupedBreakdown,
+        userGroupedBreakdown: [], // User owned items (empty for mockup)
+        totalQuantity,
+        availableQuantity,
+        // Additional breakdowns for compatibility
+        statusBreakdown: {
+          [statusId]: totalQuantity
+        },
+        conditionBreakdown: {
+          [conditionId]: totalQuantity
+        },
+        adminStatusBreakdown: {
+          [statusId]: totalQuantity
+        },
+        adminConditionBreakdown: {
+          [conditionId]: totalQuantity
+        },
+        typeBreakdown: {
+          withoutSN: isSimCard ? 0 : (hasSerialNumber ? 0 : totalQuantity),
+          withSN: isSimCard ? 0 : (hasSerialNumber ? totalQuantity : 0),
+          withPhone: isSimCard ? totalQuantity : 0
+        },
+        adminTypeBreakdown: {
+          withoutSN: isSimCard ? 0 : (hasSerialNumber ? 0 : totalQuantity),
+          withSN: isSimCard ? 0 : (hasSerialNumber ? totalQuantity : 0),
+          withPhone: isSimCard ? totalQuantity : 0
+        }
       };
       
       setBreakdownData(prev => ({
@@ -950,24 +1054,36 @@ export default function AdminInventoryPage() {
   const fetchCombinationsData = async (itemName: string, categoryId: string) => {
     try {
       setCombinationsLoading(true);
-      const response = await fetch(
-        `/api/admin/inventory/combinations?itemName=${encodeURIComponent(itemName)}&categoryId=${encodeURIComponent(categoryId)}&t=${Date.now()}`,
-        { cache: 'no-store' }
-      );
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔍 Combinations API Response:', data);
-        console.log('🔍 Number of combinations:', data.combinations?.length || 0);
-        console.log('🔍 Combinations detail:', data.combinations);
-        setCombinationsData(data.combinations || []);
-        // Reset to first page when data changes
-        setCombinationPage(1);
-      } else {
-        console.error('Failed to fetch combinations');
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(300);
+      
+      // Find item in mockInventoryItems
+      const item = mockInventoryItems.find((i: any) => i.itemName === itemName && i.categoryId === categoryId);
+      
+      if (!item) {
         setCombinationsData([]);
         setCombinationPage(1);
+        setCombinationsLoading(false);
+        return;
       }
+      
+      // Mockup: Create combinations data from item
+      const statusId = item.statusId || 'status_available';
+      const conditionId = item.conditionId || 'cond_working';
+      const quantity = item.quantity || item.totalQuantity || 10;
+      
+      // สร้าง combination data (สำหรับอุปกรณ์ที่ไม่มี SN)
+      const mockCombinations = [{
+        itemId: `${item._id}_combo_1`,
+        statusId,
+        conditionId,
+        quantity,
+        key: `${statusId}_${conditionId}`
+      }];
+      
+      setCombinationsData(mockCombinations);
+      setCombinationPage(1);
     } catch (error) {
       console.error('Error fetching combinations:', error);
       setCombinationsData([]);
@@ -1133,26 +1249,80 @@ export default function AdminInventoryPage() {
     
     try {
       
-      // Fetch current stock info (includes auto-detection)
-      const response = await fetch(`/api/admin/stock-management?itemName=${encodeURIComponent(item.itemName)}&category=${encodeURIComponent(item.categoryId)}&t=${Date.now()}`, { cache: 'no-store' });
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(500);
       
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Ensure data structure is complete
-        if (!data.stockManagement) {
-          data.stockManagement = {
-            adminDefinedStock: 0,
+      // Find item in mockInventoryItems
+      const mockItem = mockInventoryItems.find((i: any) => i.itemName === item.itemName && i.categoryId === item.categoryId);
+      
+      if (!mockItem) {
+        toast.error('ไม่พบข้อมูลอุปกรณ์นี้');
+        setStockInfo(null);
+        setStockLoading(false);
+        setStockButtonLoading(null);
+        return;
+      }
+      
+      const totalQuantity = mockItem.quantity || mockItem.totalQuantity || 10;
+      const availableQuantity = mockItem.availableQuantity || 5;
+      const statusId = mockItem.statusId || 'status_available';
+      const conditionId = mockItem.conditionId || 'cond_working';
+      const isSimCard = item.categoryId === 'cat_sim_card';
+      const hasSerialNumber = mockItem.serialNumbers && mockItem.serialNumbers.length > 0;
+      
+      // Mockup: Create mock stock management data with complete breakdown
+      // Use both status_available and status_B for compatibility
+      const mockStockData = {
+        stockManagement: {
+          adminDefinedStock: totalQuantity,
             userContributedCount: 0,
-            currentlyAllocated: 0,
-            realAvailable: 0
-          };
+          currentlyAllocated: totalQuantity - availableQuantity,
+          realAvailable: availableQuantity
+        },
+        itemName: item.itemName,
+        categoryId: item.categoryId,
+        // Status breakdowns - support both status_available and status_B
+        statusBreakdown: {
+          [statusId]: totalQuantity,
+          'status_B': statusId === 'status_available' ? totalQuantity : 0,
+          'status_available': statusId === 'status_available' ? totalQuantity : 0
+        },
+        adminStatusBreakdown: {
+          [statusId]: totalQuantity,
+          'status_B': statusId === 'status_available' ? totalQuantity : 0,
+          'status_available': statusId === 'status_available' ? totalQuantity : 0
+        },
+        userStatusBreakdown: {},
+        // Condition breakdowns
+        conditionBreakdown: {
+          [conditionId]: totalQuantity
+        },
+        adminConditionBreakdown: {
+          [conditionId]: totalQuantity
+        },
+        userConditionBreakdown: {},
+        // Type breakdowns
+        typeBreakdown: {
+          withoutSN: isSimCard ? 0 : (hasSerialNumber ? 0 : totalQuantity),
+          withSN: isSimCard ? 0 : (hasSerialNumber ? totalQuantity : 0),
+          withPhone: isSimCard ? totalQuantity : 0
+        },
+        adminTypeBreakdown: {
+          withoutSN: isSimCard ? 0 : (hasSerialNumber ? 0 : totalQuantity),
+          withSN: isSimCard ? 0 : (hasSerialNumber ? totalQuantity : 0),
+          withPhone: isSimCard ? totalQuantity : 0
+        },
+        userTypeBreakdown: {
+          withoutSN: 0,
+          withSN: 0,
+          withPhone: 0
         }
-        
-        setStockInfo(data);
+      };
+      
+      setStockInfo(mockStockData);
         
         // Set default value based on current admin stock
-        const adminStock = data.stockManagement?.adminDefinedStock || 0;
+      const adminStock = mockStockData.stockManagement?.adminDefinedStock || 0;
         setStockValue(adminStock);
         
         // 🆕 NEW: Fetch combinations data for table view
@@ -1160,19 +1330,6 @@ export default function AdminInventoryPage() {
         
         // Set default values for new UI - keep as empty for user selection
         // Don't auto-select any status or condition, let user choose
-        
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Failed to fetch stock info:', response.status, errorData);
-        
-        // Handle 401 Unauthorized (token expired)
-        if (handleTokenExpiry(response, 'ไม่สามารถโหลดข้อมูล Stock ได้ - เซสชันหมดอายุ')) {
-          return;
-        }
-        
-        toast.error(errorData.error || 'ไม่สามารถโหลดข้อมูล Stock ได้');
-        setStockInfo(null);
-      }
     } catch (error) {
       console.error('❌ Error fetching stock info:', error);
       toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
@@ -1400,52 +1557,79 @@ export default function AdminInventoryPage() {
     setAvailableItemsLoading(true);
     
     try {
+      // Mockup: Use mockup data instead of API
+      await simulateApiDelay(500);
       
-      const params = new URLSearchParams({
-        itemName: itemToFetch.itemName,
-        category: itemToFetch.categoryId
-      });
-
-      // Debug: Check if we have auth cookies
-      // Use different API based on operation type
-      const apiEndpoint = stockOperation === 'edit_items' 
-        ? `/api/admin/equipment-reports/all-items?${params}`  // All items for editing (all status/condition)
-        : `/api/admin/equipment-reports/available-items?${params}`; // Available items only for other operations
+      // Find item in mockInventoryItems
+      const mockItem = mockInventoryItems.find((i: any) => i.itemName === itemToFetch.itemName && i.categoryId === itemToFetch.categoryId);
       
-
-      const response = await fetch(apiEndpoint, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableItems(data);
-      } else {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
-        }
-        console.error('Failed to fetch available items:', response.status, errorData);
-        
-        // Show user-friendly error message
-        if (response.status === 401) {
-          toast.error('กรุณาล็อกอินใหม่');
-        } else if (response.status === 404) {
-          toast.error('ไม่พบข้อมูลอุปกรณ์นี้');
-        } else {
-          toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-        }
-        
+      if (!mockItem) {
+        toast.error('ไม่พบข้อมูลอุปกรณ์นี้');
         setAvailableItems(null);
+        setAvailableItemsLoading(false);
+        return;
       }
+      
+      // Mockup: Create mock available items data
+      const quantity = mockItem.quantity || 10;
+      const hasSerialNumbers = mockItem.serialNumbers && mockItem.serialNumbers.length > 0;
+      const isSimCard = itemToFetch.categoryId === 'cat_sim_card';
+      
+      // แบ่ง items ออกเป็น 3 กลุ่มตาม structure ที่ถูกต้อง
+      const withSerialNumber: any[] = [];
+      const withPhoneNumber: any[] = [];
+      const withoutSerialNumberItems: any[] = [];
+      
+      for (let i = 0; i < quantity; i++) {
+        const itemData = {
+          _id: `${mockItem._id}_${i}`,
+          itemMasterId: mockItem._id,
+          itemName: mockItem.itemName,
+          categoryId: mockItem.categoryId,
+          statusId: mockItem.statusId || 'status_available',
+          conditionId: mockItem.conditionId || 'cond_working',
+          quantity: 1,
+          isAvailable: stockOperation === 'edit_items' ? true : (i < (mockItem.availableQuantity || 5)),
+          addedBy: 'admin' as const
+        };
+        
+        if (isSimCard) {
+          // สำหรับซิมการ์ด: ใช้ numberPhone
+          withPhoneNumber.push({
+            ...itemData,
+            numberPhone: hasSerialNumbers && mockItem.serialNumbers[i] ? mockItem.serialNumbers[i] : `081234${String(i).padStart(4, '0')}`,
+            itemId: `${mockItem._id}_${i}`
+          });
+        } else if (hasSerialNumbers && mockItem.serialNumbers[i]) {
+          // สำหรับอุปกรณ์ที่มี Serial Number
+          withSerialNumber.push({
+            ...itemData,
+            serialNumber: mockItem.serialNumbers[i],
+            itemId: `${mockItem._id}_${i}`
+          });
+        } else {
+          // สำหรับอุปกรณ์ที่ไม่มี Serial Number
+          withoutSerialNumberItems.push({
+            ...itemData,
+            itemId: `${mockItem._id}_${i}`
+          });
+        }
+      }
+      
+      // สร้าง object ตาม structure ที่ถูกต้อง
+      const mockAvailableItemsData = {
+        withSerialNumber,
+        ...(isSimCard && { withPhoneNumber }),
+        withoutSerialNumber: {
+          count: withoutSerialNumberItems.length,
+          items: withoutSerialNumberItems
+        }
+      };
+      
+      setAvailableItems(mockAvailableItemsData);
     } catch (error) {
       console.error('Error fetching available items:', error);
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูล');
       setAvailableItems(null);
     } finally {
       // Clear the fetching flag
@@ -4476,12 +4660,14 @@ export default function AdminInventoryPage() {
                       <h6 className="font-medium text-gray-800 mb-2">สถานะอุปกรณ์</h6>
                       <div className="flex justify-between mb-1">
                         <span className="text-blue-700">มี:</span>
-                        <span className="font-semibold text-green-700">{stockInfo.statusBreakdown?.['status_available'] || 0} ชิ้น</span>
+                        <span className="font-semibold text-green-700">
+                          {(stockInfo.statusBreakdown?.['status_available'] || stockInfo.statusBreakdown?.['status_B'] || 0)} ชิ้น
+                        </span>
                       </div>
                       <div className="text-xs text-gray-500 mb-1 flex justify-between">
                         <span>คงเหลือ | User ถือ</span>
                         <span>
-                          {(stockInfo.adminStatusBreakdown?.['status_available'] || 0)} | {(stockInfo.userStatusBreakdown?.['status_available'] || 0)}
+                          {(stockInfo.adminStatusBreakdown?.['status_available'] || stockInfo.adminStatusBreakdown?.['status_B'] || 0)} | {(stockInfo.userStatusBreakdown?.['status_available'] || stockInfo.userStatusBreakdown?.['status_B'] || 0)}
                         </span>
                       </div>
                       {stockInfo.statusBreakdown?.['status_missing'] !== undefined && stockInfo.statusBreakdown?.['status_missing'] > 0 && (

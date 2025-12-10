@@ -195,30 +195,26 @@ mockDashboardStats     // สถิติ Dashboard
 แก้ไขไฟล์ `src/lib/mockup-data.ts`:
 
 ```typescript
-// เพิ่มผู้ใช้ใหม่
-export const mockNewUser = {
-  id: 'user-5',
-  email: 'newuser@example.com',
-  firstName: 'ผู้ใช้',
-  lastName: 'ใหม่',
-  nickname: 'นิว',
-  department: 'Marketing',
-  phone: '0845678901',
-  userType: 'individual' as const,
-  office: 'สำนักงานสาขา 2',
-  officeId: 'office-3',
-  officeName: 'สำนักงานสาขา 2',
-  isMainAdmin: false,
-  userRole: 'user' as const,
-  pendingDeletion: false,
-};
-
-// เพิ่มในรายชื่อผู้ใช้
+// เพิ่มผู้ใช้ใหม่ใน mockUsers array
 export const mockUsers = [
-  mockUser,
-  mockAdminUser,
-  mockNewUser, // เพิ่มตรงนี้
-  // ...
+  // ... users เดิม ...
+  {
+    id: 'user-5',
+    email: 'newuser@example.com',
+    password: '123456',
+    firstName: 'ผู้ใช้',
+    lastName: 'ใหม่',
+    nickname: 'นิว',
+    department: 'Marketing',
+    phone: '0845678901',
+    userType: 'individual' as const,
+    office: 'สำนักงานสาขา 2',
+    officeId: 'office-3',
+    officeName: 'สำนักงานสาขา 2',
+    isMainAdmin: false,
+    userRole: 'user' as const,
+    pendingDeletion: false,
+  },
 ];
 ```
 
