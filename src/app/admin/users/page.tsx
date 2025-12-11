@@ -157,18 +157,14 @@ export default function AdminUsersPage() {
   // Drag scroll ref
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
-  // ✅ Reset data loaded flag when pathname changes (navigation to this page)
-  useEffect(() => {
-    dataLoadedRef.current = false;
-  }, [pathname]);
-
+  // ✅ Load data only once when component mounts
   useEffect(() => {
     if (!dataLoadedRef.current) {
       dataLoadedRef.current = true;
       fetchUsers();
       fetchOfficeOptions(); // 🆕 ดึงรายการ Office
     }
-  }, [pathname]);
+  }, []); // ✅ Empty dependency array - โหลดครั้งเดียวตอน mount
 
   // 🆕 ดึงรายการ Office สำหรับ dropdown
   const fetchOfficeOptions = async () => {

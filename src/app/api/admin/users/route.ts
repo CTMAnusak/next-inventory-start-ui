@@ -4,8 +4,8 @@ import { mockUsers } from '@/lib/mockup-data';
 // GET /api/admin/users - ดึงข้อมูล users ทั้งหมด
 export async function GET() {
   try {
-    // จำลองการ delay ของ API
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // ❌ ลบ delay ออก เพราะทำให้โหลดช้า
+    // await new Promise(resolve => setTimeout(resolve, 300));
 
     // แปลงข้อมูล mockUsers ให้อยู่ในรูปแบบที่ตรงกับ User interface
     const users = mockUsers.map(user => ({

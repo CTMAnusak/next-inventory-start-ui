@@ -4,8 +4,8 @@ import { mockOffices } from '@/lib/mockup-data';
 // GET /api/admin/offices - ดึงข้อมูล offices ทั้งหมด
 export async function GET() {
   try {
-    // จำลองการ delay ของ API
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // ❌ ลบ delay ออก เพราะทำให้โหลดช้า
+    // await new Promise(resolve => setTimeout(resolve, 200));
 
     // แปลงข้อมูล mockOffices ให้อยู่ในรูปแบบที่ตรงกับที่ frontend ต้องการ
     const offices = mockOffices
